@@ -1,4 +1,4 @@
-Profrom liblo import *
+from liblo import *
 
 import sys
 import select
