@@ -1,13 +1,8 @@
-from liblo import *
-
-import time
 import json
 import csv
 from sklearn import neural_network, preprocessing, model_selection, neighbors
 import numpy as np
 
-testing = True
-use_scaler = False
 
 parameters = {
             'hidden_layer_sizes': [(50,), (100,), (50,50), (100,50)],
@@ -33,34 +28,6 @@ scaler = preprocessing.MaxAbsScaler()
 # if testing:
 #     classifier = model_selection.GridSearchCV(classifier, parameters, n_jobs=4)
 
-class MuseServer(ServerThread):
-    #listen for messages on port 5000
-    def __init__(self):
-        ServerThread.__init__(self, 5000)
-        self.fresh_data = []
-
-    #receive fft data
-    @make_method('/muse/elements/raw_fft0', 'f'*129)
-    def fft0_callback(self, path, args):
-        self.fresh_data.extend(args)
-
-    @make_method('/muse/elements/raw_fft1', 'f'*129)
-    def fft1_callback(self, path, args):
-        self.fresh_data.extend(args)
-
-    @make_method('/muse/elements/raw_fft2', 'f'*129)
-    def fft2_callback(self, path, args):
-        self.fresh_data.extend(args)
-
-    @make_method('/muse/elements/raw_fft3', 'f'*129)
-    def fft3_callback(self, path, args):
-        self.fresh_data.extend(args)
-        if use_scaler:
-            print(classifier.predict(scaler.transform([self.fresh_data])))
-        else:
-            print(classifier.predict([self.fresh_data]))
-        self.fresh_data = []
-
 
 filename = 'baseline' #sys.argv[1]
 train_baseline = []
@@ -75,6 +42,7 @@ with open(filename + '.csv', 'r') as datafile:
     reader = csv.reader(datafile)
     for row in reader:
         train_concentration.append([item for sublist in row for item in json.loads(sublist)])
+
 
 print('Training')
 if use_scaler:
@@ -103,17 +71,3 @@ if testing:
 
     print("Test set score: ", test_score)
     print("Training set score: ", train_score)
-
-else:
-    try:
-        server = MuseServer()
-    except ServerError as err:
-        print(str(err))
-        sys.exit()
-
-    print('Predicting')
-    server.start()
-
-    if __name__ == "__main__":
-        while 1:
-            time.sleep(1)
