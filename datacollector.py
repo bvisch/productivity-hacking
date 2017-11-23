@@ -7,26 +7,56 @@ import csv
 data = { 'fft0': [], 'fft1': [], 'fft2': [], 'fft3': [] }
 
 class MuseServer(ServerThread):
+
     #listen for messages on port 5000
     def __init__(self):
         ServerThread.__init__(self, 5000)
+        self.packet = { 'fft0': [], 'fft1': [], 'fft2': [], 'fft3': [] }
+        self.garbage = False
+
+    @make_method('/muse/elements/blink', 'i')
+    def blink_callback(self, path, args):
+        print("blink" + str(args))
+        if args[0] == 1:
+            self.garbage = True
+
+
+    @make_method('/muse/elements/jaw_clench', 'i')
+    def clench_callback(self, path, args):
+        print("clench" + str(args))
+        if args[0] == 1:
+            self.garbage = True
+
 
     #receive fft data
     @make_method('/muse/elements/raw_fft0', 'f'*129)
     def fft0_callback(self, path, args):
-        data['fft0'].append(args)
+        print("1")
+        self.packet['fft0'].append(args)
 
     @make_method('/muse/elements/raw_fft1', 'f'*129)
     def fft1_callback(self, path, args):
-        data['fft1'].append(args)
+        print("2")
+        self.packet['fft1'].append(args)
 
     @make_method('/muse/elements/raw_fft2', 'f'*129)
     def fft2_callback(self, path, args):
-        data['fft2'].append(args)
+        print("3")
+        self.packet['fft2'].append(args)
 
     @make_method('/muse/elements/raw_fft3', 'f'*129)
     def fft3_callback(self, path, args):
-        data['fft3'].append(args)
+        print("4")
+        self.packet['fft3'].append(args)
+
+        if not self.garbage:
+            data['fft0'].append(self.packet['fft0'])
+            data['fft1'].append(self.packet['fft1'])
+            data['fft2'].append(self.packet['fft2'])
+            data['fft3'].append(self.packet['fft3'])
+            self.packet = { 'fft0': [], 'fft1': [], 'fft2': [], 'fft3': [] }
+        else:
+            self.garbage = False
 
 
 
@@ -37,15 +67,14 @@ except ServerError as err:
     sys.exit()
 
 
+#wait 1 minute
+print('Waiting 1 minute before data collection')
+time.sleep(60)
 
-#wait 10 minutes
-print('Waiting 10 minutes before data collection')
-time.sleep(600)
-
-#collect data for 20 minutes
+#collect data for 10 minutes
 print('Collecting data')
 server.start()
-time.sleep(1200)
+time.sleep(600)
 server.stop()
 
 #save to csv
