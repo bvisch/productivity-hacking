@@ -14,6 +14,7 @@ from datetime import datetime
 
 
 data = []
+predict = False
 classifier = neural_network.MLPClassifier(hidden_layer_sizes=(100,),
                                           solver='adam',
                                           activation='identity',
